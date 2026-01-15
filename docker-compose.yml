@@ -1,13 +1,16 @@
 version: '3.8'
 
 services:
-  racknerd-homepage:
+  homepage-extensions:
     build: .
-    image: jcubby86/racknerd-homepage:latest
+    image: jcubby86/homepage-extensions:latest
     ports:
       - "5000:5000"
     environment:
       - RACKNERD_BASE_URL=https://nerdvm.racknerd.com
       - RACKNERD_KEY=<KEY>
       - RACKNERD_HASH=<HASH>
+      - MANYFOLD_BASE_URL=https://manyfold.example.com
+      - MANYFOLD_CLIENT_ID=<CLIENT_ID>
+      - MANYFOLD_CLIENT_SECRET=<CLIENT_SECRET>
     restart: unless-stopped

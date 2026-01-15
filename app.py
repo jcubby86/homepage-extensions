@@ -8,10 +8,8 @@ import logging
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -49,13 +47,15 @@ def parse_racknerd_data(bw_string):
 
 @app.route("/racknerd", methods=["GET"])
 @cache.cached(timeout=3600)
-def get_bandwidth():
+def racknerd():
     racknerd_base_url = os.getenv("RACKNERD_BASE_URL")
     racknerd_key = os.getenv("RACKNERD_KEY")
     racknerd_hash = os.getenv("RACKNERD_HASH")
 
     if not racknerd_base_url or not racknerd_key or not racknerd_hash:
-        logger.error("Missing required environment variables: RACKNERD_BASE_URL, RACKNERD_KEY, or RACKNERD_HASH")
+        logger.error(
+            "Missing required environment variables: RACKNERD_BASE_URL, RACKNERD_KEY, or RACKNERD_HASH"
+        )
         return (
             jsonify(
                 {
@@ -94,6 +94,91 @@ def get_bandwidth():
     except Exception as e:
         logger.error(f"Failed to parse RackNerd data: {str(e)}")
         return jsonify({"error": f"Failed to parse data: {str(e)}"}), 500
+
+
+@app.route("/manyfold", methods=["GET"])
+@cache.cached(timeout=3600)
+def manyfold():
+    manyfold_base_url = os.getenv("MANYFOLD_BASE_URL")
+    manyfold_client_id = os.getenv("MANYFOLD_CLIENT_ID")
+    manyfold_client_secret = os.getenv("MANYFOLD_CLIENT_SECRET")
+    manyfold_scopes = os.getenv("MANYFOLD_SCOPES", "read")
+
+    if not manyfold_base_url or not manyfold_client_id or not manyfold_client_secret:
+        logger.error(
+            "Missing required environment variables: MANYFOLD_BASE_URL, MANYFOLD_CLIENT_ID, or MANYFOLD_CLIENT_SECRET"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "MANYFOLD_BASE_URL, MANYFOLD_CLIENT_ID, or MANYFOLD_CLIENT_SECRET environment variable not set"
+                }
+            ),
+            500,
+        )
+
+    try:
+        logger.info("Fetching Manyfold OAuth token")
+
+        # Get OAuth token
+        token_url = f"{manyfold_base_url}/oauth/token"
+        token_data = {
+            "grant_type": "client_credentials",
+            "client_id": manyfold_client_id,
+            "client_secret": manyfold_client_secret,
+            "scope": manyfold_scopes,
+        }
+
+        token_response = requests.post(token_url, data=token_data, timeout=10)
+        token_response.raise_for_status()
+        token_json = token_response.json()
+        access_token = token_json.get("access_token")
+
+        if not access_token:
+            logger.error("Failed to obtain access token from Manyfold")
+            return jsonify({"error": "Failed to obtain access token"}), 500
+
+        logger.info("Successfully obtained Manyfold OAuth token")
+
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "accept": "application/vnd.manyfold.v0+json",
+        }
+
+        models_url = f"{manyfold_base_url}/models"
+        models_response = requests.get(models_url, headers=headers, timeout=10)
+        models_response.raise_for_status()
+        logger.info("Successfully fetched Manyfold models")
+
+        creators_url = f"{manyfold_base_url}/creators"
+        creators_response = requests.get(creators_url, headers=headers, timeout=10)
+        creators_response.raise_for_status()
+        logger.info("Successfully fetched Manyfold creators")
+
+        collections_url = f"{manyfold_base_url}/collections"
+        collections_response = requests.get(
+            collections_url, headers=headers, timeout=10
+        )
+        collections_response.raise_for_status()
+        logger.info("Successfully fetched Manyfold collections")
+
+        return (
+            jsonify(
+                {
+                    "models": models_response.json()["totalItems"],
+                    "creators": creators_response.json()["totalItems"],
+                    "collections": collections_response.json()["totalItems"],
+                }
+            ),
+            200,
+        )
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to fetch Manyfold data: {str(e)}")
+        return jsonify({"error": f"Failed to fetch data: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Failed to process Manyfold data: {str(e)}")
+        return jsonify({"error": f"Failed to process data: {str(e)}"}), 500
 
 
 @app.route("/health", methods=["GET"])
