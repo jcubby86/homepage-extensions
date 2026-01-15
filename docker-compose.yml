@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   homepage-extensions:
     build: .
@@ -15,4 +13,8 @@ services:
       - MANYFOLD_CLIENT_SECRET=<CLIENT_SECRET>
       - BOOKSTACK_BASE_URL=https://bookstack.example.com
       - BOOKSTACK_API_TOKEN=<API_TOKEN>
+      - LDAP_SERVER_URL=ldap://ldap.example.com
+      - LDAP_BASE_DN=dc=example,dc=com
+      - LDAP_QUERY_BIND=cn=homepage,ou=people,dc=example,dc=com
+      - LDAP_QUERY_PASSWORD=<LDAP_QUERY_PASSWORD>
     restart: unless-stopped

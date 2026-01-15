@@ -4,6 +4,7 @@ import requests
 import xmltodict
 import os
 import logging
+from ldap3 import Server, Connection, ALL, SUBTREE
 
 # Configure logging
 logging.basicConfig(
@@ -229,6 +230,82 @@ def bookstack():
     except Exception as e:
         logger.error(f"Failed to process BookStack data: {str(e)}")
         return jsonify({"error": f"Failed to process data: {str(e)}"}), 500
+
+
+@app.route("/ldap", methods=["GET"])
+@cache.cached(timeout=3600)
+def ldap():
+    ldap_host = os.getenv("LDAP_SERVER_URL")
+    ldap_port = os.getenv("LDAP_PORT", "3890")
+    ldap_query_bind = os.getenv("LDAP_QUERY_BIND")
+    ldap_query_password = os.getenv("LDAP_QUERY_PASSWORD")
+    ldap_base_dn = os.getenv("LDAP_BASE_DN")
+    if (
+        not ldap_host
+        or not ldap_query_bind
+        or not ldap_query_password
+        or not ldap_base_dn
+    ):
+        logger.error(
+            "Missing required environment variables: LDAP_SERVER_URL, LDAP_QUERY_BIND, LDAP_QUERY_PASSWORD, or LDAP_BASE_DN"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "LDAP_SERVER_URL, LDAP_QUERY_BIND, LDAP_QUERY_PASSWORD, or LDAP_BASE_DN environment variable not set"
+                }
+            ),
+            500,
+        )
+
+    try:
+        logger.info("Connecting to LDAP server")
+
+        # Connect to LDAP server
+        server = Server(ldap_host, port=int(ldap_port), get_info=ALL)
+        conn = Connection(
+            server, user=ldap_query_bind, password=ldap_query_password, auto_bind=True
+        )
+
+        logger.info("Successfully connected to LDAP server")
+
+        # Search for users
+        conn.search(
+            search_base=f"ou=people,{ldap_base_dn}",
+            search_filter="(objectClass=person)",
+            search_scope=SUBTREE,
+            attributes=["cn"],
+        )
+        users_count = len(conn.entries)
+        logger.info(f"Found {users_count} users in ou=people,{ldap_base_dn}")
+
+        # Search for groups
+        conn.search(
+            search_base=f"ou=groups,{ldap_base_dn}",
+            search_filter="(cn=*)",
+            search_scope=SUBTREE,
+            attributes=["cn"],
+        )
+        groups_count = len(conn.entries)
+        logger.info(f"Found {groups_count} entries in ou=groups,{ldap_base_dn}")
+
+        # Close connection
+        conn.unbind()
+
+        logger.info("Successfully fetched LDAP data")
+        return (
+            jsonify(
+                {
+                    "users": users_count,
+                    "groups": groups_count,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to fetch LDAP data: {str(e)}")
+        return jsonify({"error": f"Failed to fetch data: {str(e)}"}), 500
 
 
 @app.route("/health", methods=["GET"])
