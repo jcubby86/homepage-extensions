@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_caching import Cache
 import requests
 import xmltodict
@@ -307,6 +307,10 @@ def ldap():
         logger.error(f"Failed to fetch LDAP data: {str(e)}")
         return jsonify({"error": f"Failed to fetch data: {str(e)}"}), 500
 
+
+@app.route("/mock", methods=["GET"])
+def home():
+    return jsonify(request.args.to_dict()), 200
 
 @app.route("/health", methods=["GET"])
 def health():

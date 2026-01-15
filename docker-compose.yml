@@ -1,7 +1,7 @@
 services:
   homepage-extensions:
     build: .
-    image: jcubby86/homepage-extensions:latest
+    image: ghcr.io/jcubby86/homepage-extensions:latest
     ports:
       - "5000:5000"
     environment:
