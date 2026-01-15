@@ -78,11 +78,11 @@ def racknerd():
         return (
             jsonify(
                 {
-                    "bandwidth": parse_racknerd_data(json_data["bw"]),
-                    "memory": parse_racknerd_data(json_data["mem"]),
-                    "disk": parse_racknerd_data(json_data["hdd"]),
-                    "ip_address": json_data["ipaddress"],
-                    "status": json_data["status"],
+                    "bandwidth": parse_racknerd_data(json_data.get("bw", "0,0,0,0")),
+                    "memory": parse_racknerd_data(json_data.get("mem", "0,0,0,0")),
+                    "disk": parse_racknerd_data(json_data.get("hdd", "0,0,0,0")),
+                    "ip_address": json_data.get("ipaddress", None),
+                    "status": json_data.get("status", None),
                 }
             ),
             200,
@@ -165,9 +165,9 @@ def manyfold():
         return (
             jsonify(
                 {
-                    "models": models_response.json()["totalItems"],
-                    "creators": creators_response.json()["totalItems"],
-                    "collections": collections_response.json()["totalItems"],
+                    "models": models_response.json().get("totalItems", 0),
+                    "creators": creators_response.json().get("totalItems", 0),
+                    "collections": collections_response.json().get("totalItems", 0),
                 }
             ),
             200,
@@ -178,6 +178,56 @@ def manyfold():
         return jsonify({"error": f"Failed to fetch data: {str(e)}"}), 500
     except Exception as e:
         logger.error(f"Failed to process Manyfold data: {str(e)}")
+        return jsonify({"error": f"Failed to process data: {str(e)}"}), 500
+
+
+@app.route("/bookstack", methods=["GET"])
+@cache.cached(timeout=3600)
+def bookstack():
+    bookstack_base_url = os.getenv("BOOKSTACK_BASE_URL")
+    bookstack_api_token = os.getenv("BOOKSTACK_API_TOKEN")
+
+    if not bookstack_base_url or not bookstack_api_token:
+        logger.error(
+            "Missing required environment variables: BOOKSTACK_BASE_URL or BOOKSTACK_API_TOKEN"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "BOOKSTACK_BASE_URL or BOOKSTACK_API_TOKEN environment variable not set"
+                }
+            ),
+            500,
+        )
+
+    try:
+        logger.info("Fetching BookStack data")
+        headers = {"Authorization": f"Token {bookstack_api_token}"}
+
+        books_url = f"{bookstack_base_url}/api/books"
+        books_response = requests.get(books_url, headers=headers, timeout=10)
+        books_response.raise_for_status()
+
+        pages_url = f"{bookstack_base_url}/api/pages"
+        pages_response = requests.get(pages_url, headers=headers, timeout=10)
+        pages_response.raise_for_status()
+
+        logger.info("Successfully fetched BookStack data")
+        return (
+            jsonify(
+                {
+                    "total_books": books_response.json().get("total", 0),
+                    "total_pages": pages_response.json().get("total", 0),
+                }
+            ),
+            200,
+        )
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to fetch BookStack data: {str(e)}")
+        return jsonify({"error": f"Failed to fetch data: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Failed to process BookStack data: {str(e)}")
         return jsonify({"error": f"Failed to process data: {str(e)}"}), 500
 
 

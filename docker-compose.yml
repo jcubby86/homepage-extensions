@@ -13,4 +13,6 @@ services:
       - MANYFOLD_BASE_URL=https://manyfold.example.com
       - MANYFOLD_CLIENT_ID=<CLIENT_ID>
       - MANYFOLD_CLIENT_SECRET=<CLIENT_SECRET>
+      - BOOKSTACK_BASE_URL=https://bookstack.example.com
+      - BOOKSTACK_API_TOKEN=<API_TOKEN>
     restart: unless-stopped
