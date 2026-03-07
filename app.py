@@ -4,6 +4,7 @@ import requests
 import xmltodict
 import os
 import logging
+import json
 from ldap3 import Server, Connection, ALL, SUBTREE
 
 # Configure logging
@@ -308,9 +309,56 @@ def ldap():
         return jsonify({"error": f"Failed to fetch data: {str(e)}"}), 500
 
 
+@app.route("/notifications", methods=["GET"])
+def notifications():
+    ntfy_host = os.getenv("NTFY_BASE_URL")
+    ntfy_token = os.getenv("NTFY_TOKEN")
+    topic = request.args.get("topic", "homepage")
+    since = request.args.get("since", "48h")
+
+    if not ntfy_host or not ntfy_token:
+        logger.error(
+            "Missing required environment variables: NTFY_BASE_URL or NTFY_TOKEN"
+        )
+        return (
+            jsonify(
+                {"error": "NTFY_BASE_URL or NTFY_TOKEN environment variable not set"}
+            ),
+            500,
+        )
+
+    try:
+        logger.info(f"Fetching notifications from ntfy topic: {topic}")
+        url = f"{ntfy_host.rstrip('/')}/{topic}/json"
+        params = {"poll": "1", "since": since}
+        headers = {"Authorization": f"Bearer {ntfy_token}"}
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+
+        # parse response as stream of JSON objects
+        notifications = []
+        for line in response.iter_lines(chunk_size=1024):
+            if line:
+                try:
+                    print(line)
+                    data = json.loads(line.decode("utf-8"))
+                    notifications.append(data)
+                except Exception as e:
+                    logger.warning(f"Failed to decode notification line: {str(e)}")
+
+        notifications.sort(key=lambda x: x.get("time", 0), reverse=True)
+
+        return jsonify(notifications), 200
+
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch notifications: {str(e)}")
+        return jsonify({"error": f"Failed to fetch notifications: {str(e)}"}), 500
+
+
 @app.route("/mock", methods=["GET"])
 def home():
     return jsonify(request.args.to_dict()), 200
+
 
 @app.route("/health", methods=["GET"])
 def health():
