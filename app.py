@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_caching import Cache
 import requests
-import xmltodict
 import os
 import logging
 import json
@@ -69,12 +68,22 @@ def racknerd():
 
     try:
         logger.info("Fetching RackNerd data")
-        url = f"{racknerd_base_url}/api/client/command.php?key={racknerd_key}&hash={racknerd_hash}&action=info&bw=true&mem=true&hdd=true"
-        response = requests.get(url, timeout=10)
+        url = f"{racknerd_base_url}/api/client/command.php"
+        payload = {
+            "key": racknerd_key,
+            "hash": racknerd_hash,
+            "action": "info",
+            "rdtype": "json",
+            "bw": "true",
+            "mem": "true",
+            "hdd": "true",
+            "status": "true",
+            "ipaddr": "true",
+        }
+        response = requests.post(url, data=payload, timeout=60)
         response.raise_for_status()
 
-        wrapped_xml = f"<root>{response.text.strip()}</root>"
-        json_data = xmltodict.parse(wrapped_xml)["root"]
+        json_data = response.json()
 
         logger.info("Successfully fetched and parsed RackNerd data")
         return (

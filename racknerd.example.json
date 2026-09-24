@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "statusmsg": "",
+  "hostname": "ubuntu-0",
+  "ipaddress": "0.0.0.0",
+  "template": "linux-ubuntu-22.04-x86_64-minimal-latest-v2",
+  "os": "Ubuntu 22.04 64 Bit",
+  "vmstat": "online",
+  "ipaddr": "0.0.0.0",
+  "bw": "3221225472000,832569344,3220392902656,0",
+  "hdd": "48318382080,25537019904,22781362176,53",
+  "mem": "2684354560,904921088,1779433472,34"
+}
