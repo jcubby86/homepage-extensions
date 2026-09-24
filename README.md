@@ -7,7 +7,7 @@ A Flask API server that provides custom service integrations for [Homepage](http
 Set the following environment variables based on which services you want to use:
 
 ### RackNerd
-- `RACKNERD_BASE_URL` - RackNerd API base URL
+- `RACKNERD_URL` - Full RackNerd API endpoint URL (e.g. `https://ctrl.racknerd.com/api/client/command.php`)
 - `RACKNERD_KEY` - RackNerd API key
 - `RACKNERD_HASH` - RackNerd API hash
 
@@ -37,7 +37,7 @@ pip install -r requirements.txt
 
 2. Set environment variables:
 ```bash
-export RACKNERD_BASE_URL=https://your-racknerd-server.com
+export RACKNERD_URL=https://ctrl.racknerd.com/api/client/command.php
 export RACKNERD_KEY=your_key
 export RACKNERD_HASH=your_hash
 # ... set other variables as needed
@@ -60,7 +60,7 @@ docker build -t homepage-extensions .
 ### Run the container:
 ```bash
 docker run -p 5000:5000 \
-  -e RACKNERD_BASE_URL=https://your-server.com \
+  -e RACKNERD_URL=https://ctrl.racknerd.com/api/client/command.php \
   -e RACKNERD_KEY=your_key \
   -e RACKNERD_HASH=your_hash \
   homepage-extensions

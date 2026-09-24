@@ -5,7 +5,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - RACKNERD_BASE_URL=https://nerdvm.racknerd.com
+      - RACKNERD_URL=https://ctrl.racknerd.com/api/client/command.php
       - RACKNERD_KEY=<KEY>
       - RACKNERD_HASH=<HASH>
       - MANYFOLD_BASE_URL=https://manyfold.example.com

@@ -49,18 +49,18 @@ def parse_racknerd_data(bw_string):
 @app.route("/racknerd", methods=["GET"])
 @cache.cached(timeout=3600)
 def racknerd():
-    racknerd_base_url = os.getenv("RACKNERD_BASE_URL")
+    racknerd_url = os.getenv("RACKNERD_URL")
     racknerd_key = os.getenv("RACKNERD_KEY")
     racknerd_hash = os.getenv("RACKNERD_HASH")
 
-    if not racknerd_base_url or not racknerd_key or not racknerd_hash:
+    if not racknerd_url or not racknerd_key or not racknerd_hash:
         logger.error(
-            "Missing required environment variables: RACKNERD_BASE_URL, RACKNERD_KEY, or RACKNERD_HASH"
+            "Missing required environment variables: RACKNERD_URL, RACKNERD_KEY, or RACKNERD_HASH"
         )
         return (
             jsonify(
                 {
-                    "error": "RACKNERD_BASE_URL, RACKNERD_KEY, or RACKNERD_HASH environment variable not set"
+                    "error": "RACKNERD_URL, RACKNERD_KEY, or RACKNERD_HASH environment variable not set"
                 }
             ),
             500,
@@ -68,7 +68,6 @@ def racknerd():
 
     try:
         logger.info("Fetching RackNerd data")
-        url = f"{racknerd_base_url}/api/client/command.php"
         payload = {
             "key": racknerd_key,
             "hash": racknerd_hash,
@@ -80,7 +79,7 @@ def racknerd():
             "status": "true",
             "ipaddr": "true",
         }
-        response = requests.post(url, data=payload, timeout=60)
+        response = requests.post(racknerd_url, data=payload, timeout=60)
         response.raise_for_status()
 
         json_data = response.json()
